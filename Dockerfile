@@ -24,18 +24,23 @@ RUN \
     rm -rf /var/lib/apt/lists/* && \
     rm -rf /build 
 
+
 ENV PYTHON3_VERSION=3.10 \
-   ML_RUNTIME_KERNEL="Python 3.10" \
+   ML_RUNTIME_KERNEL="R 4.0" \
    ML_RUNTIME_EDITION=Standard \
    ML_RUNTIME_DESCRIPTION="Runtime with a custom PBJ with R installed (python by default) for GPU"
 
 ENV ML_RUNTIME_EDITOR="PBJ Workbench" \
    ML_RUNTIME_EDITION="Tech Preview" \
-   ML_RUNTIME_KERNEL="Python 3.10" \
-   ML_RUNTIME_JUPYTER_KERNEL_NAME="python3" \
+   ML_RUNTIME_KERNEL="R 4.0" \
+   ML_RUNTIME_JUPYTER_KERNEL_NAME="r4.0" \
    ML_RUNTIME_JUPYTER_KERNEL_GATEWAY_CMD="jupyter kernelgateway --config=/home/cdsw/.jupyter/jupyter_kernel_gateway_config.py --debug" \
    ML_RUNTIME_DESCRIPTION="Custom PBJ Workbench R runtime provided by Ryan" \
    JUPYTERLAB_WORKSPACES_DIR=/tmp
+
+RUN \
+    /bin/bash -c "echo -e \"install.packages('IRkernel')\nIRkernel::installspec(prefix='/usr/local',name = '${ML_RUNTIME_JUPYTER_KERNEL_NAME}', displayname = '${ML_RUNTIME_KERNEL}')\" | R --no-save" && \
+    rm -rf /build
 
 ENV \
    ML_RUNTIME_METADATA_VERSION=2 \
