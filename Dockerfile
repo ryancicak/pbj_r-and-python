@@ -24,21 +24,36 @@ RUN \
     rm -rf /var/lib/apt/lists/* && \
     rm -rf /build 
 
-# Set the ENV and LABEL details for this Runtime
-# The final requirement is to set various labels and environment variables that CML needs 
-# to pick up the Runtime's details. Here the editor is to RStudio
-ENV ML_RUNTIME_EDITOR="PBJ" \ 
-ML_RUNTIME_EDITION="PBJ with R and Python"	\ 
-ML_RUNTIME_SHORT_VERSION="2023.05" \
-ML_RUNTIME_MAINTENANCE_VERSION="8" \
-ML_RUNTIME_FULL_VERSION="2023.05.2" \
-ML_RUNTIME_DESCRIPTION="PBJ with R and Python" \
-ML_RUNTIME_KERNEL="R 4.0"
+ENV PYTHON3_VERSION=3.10 \
+   ML_RUNTIME_KERNEL="Python 3.10" \
+   ML_RUNTIME_EDITION=Standard \
+   ML_RUNTIME_DESCRIPTION="Runtime with a custom PBJ with R installed (python by default) for GPU"
 
-LABEL com.cloudera.ml.runtime.editor=$ML_RUNTIME_EDITOR \
-com.cloudera.ml.runtime.edition=$ML_RUNTIME_EDITION \
-com.cloudera.ml.runtime.full-version=$ML_RUNTIME_FULL_VERSION \
-com.cloudera.ml.runtime.short-version=$ML_RUNTIME_SHORT_VERSION \
-com.cloudera.ml.runtime.maintenance-version=$ML_RUNTIME_MAINTENANCE_VERSION \
-com.cloudera.ml.runtime.description=$ML_RUNTIME_DESCRIPTION \
-com.cloudera.ml.runtime.kernel=$ML_RUNTIME_KERNEL
+ENV ML_RUNTIME_EDITOR="PBJ Workbench" \
+   ML_RUNTIME_EDITION="Tech Preview" \
+   ML_RUNTIME_KERNEL="Python 3.10" \
+   ML_RUNTIME_JUPYTER_KERNEL_NAME="python3" \
+   ML_RUNTIME_JUPYTER_KERNEL_GATEWAY_CMD="jupyter kernelgateway --config=/home/cdsw/.jupyter/jupyter_kernel_gateway_config.py --debug" \
+   ML_RUNTIME_DESCRIPTION="Custom PBJ Workbench R runtime provided by Ryan" \
+   JUPYTERLAB_WORKSPACES_DIR=/tmp
+
+ENV \
+   ML_RUNTIME_METADATA_VERSION=2 \
+   ML_RUNTIME_FULL_VERSION=1.1.1 \
+   ML_RUNTIME_SHORT_VERSION=1.1 \
+   ML_RUNTIME_MAINTENANCE_VERSION=1 \
+   ML_RUNTIME_GIT_HASH=0 \
+   ML_RUNTIME_GBN=0
+
+LABEL \
+   com.cloudera.ml.runtime.runtime-metadata-version=$ML_RUNTIME_METADATA_VERSION \
+   com.cloudera.ml.runtime.editor=$ML_RUNTIME_EDITOR \
+   com.cloudera.ml.runtime.edition=$ML_RUNTIME_EDITION \
+   com.cloudera.ml.runtime.description=$ML_RUNTIME_DESCRIPTION \
+   com.cloudera.ml.runtime.kernel=$ML_RUNTIME_KERNEL \
+   com.cloudera.ml.runtime.full-version=$ML_RUNTIME_FULL_VERSION \
+   com.cloudera.ml.runtime.short-version=$ML_RUNTIME_SHORT_VERSION \
+   com.cloudera.ml.runtime.maintenance-version=$ML_RUNTIME_MAINTENANCE_VERSION \
+   com.cloudera.ml.runtime.git-hash=$ML_RUNTIME_GIT_HASH \
+   com.cloudera.ml.runtime.gbn=$ML_RUNTIME_GBN \
+   com.cloudera.ml.runtime.cuda-version=$ML_RUNTIME_CUDA_VERSION
