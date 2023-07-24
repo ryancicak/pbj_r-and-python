@@ -39,13 +39,13 @@ ENV ML_RUNTIME_EDITOR="PBJ Workbench" \
    JUPYTERLAB_WORKSPACES_DIR=/tmp
 
 RUN \
-    /bin/bash -c "echo -e \"install.packages('IRkernel')\nIRkernel::installspec(prefix='/usr/local',name = '${ML_RUNTIME_JUPYTER_KERNEL_NAME}', displayname = '${ML_RUNTIME_KERNEL}')\" | R --no-save" && \
+    /bin/bash -c "echo -e \"install.packages('IRkernel', lib = '/usr/lib/R/library')\nIRkernel::installspec(prefix='/usr/local',name = '${ML_RUNTIME_JUPYTER_KERNEL_NAME}', displayname = '${ML_RUNTIME_KERNEL}')\" | R --no-save" && \
     rm -rf /build
 
 ENV \
    ML_RUNTIME_METADATA_VERSION=2 \
-   ML_RUNTIME_FULL_VERSION=1.1.1 \
-   ML_RUNTIME_SHORT_VERSION=1.1 \
+   ML_RUNTIME_FULL_VERSION=1.2.1 \
+   ML_RUNTIME_SHORT_VERSION=1.2 \
    ML_RUNTIME_MAINTENANCE_VERSION=1 \
    ML_RUNTIME_GIT_HASH=0 \
    ML_RUNTIME_GBN=0
