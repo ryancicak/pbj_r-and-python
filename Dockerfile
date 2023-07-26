@@ -1,20 +1,102 @@
-FROM docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-workbench-python3.10-cuda:2023.05.2-b7
+# Copyright 2022 Cloudera. All Rights Reserved.
+FROM ubuntu:20.04
 
-# Updated the images with apt-get
-RUN apt-get update && apt-get upgrade -y
+RUN \
+  addgroup --gid 8536 cdsw && \
+  adduser --disabled-password --gecos "CDSW User" --uid 8536 --gid 8536 cdsw
 
-# Setup R Repos
-RUN apt-get install -y --no-install-recommends software-properties-common dirmngr gdebi-core
-RUN curl https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc > /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
-RUN add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
 
-# Install R
-# Since this Dockerfile uses the CML Python base image, it is necessary to install R. This will 
-# not install the # cdsw package used for managing experiments and models with R sessions. Given 
-# that models and # experiments don't use R-Studio as the editor, this is not a problem. Just make 
-# sure to keep consistency in R versions. The current CML R Runtime uses R 4.0.4, so that is the 
-# target version to install
-RUN apt-get install -y r-base-core=4.0.4-1.2004.0
+RUN for i in /etc /etc/alternatives; do \
+  if [ -d ${i} ]; then chmod 777 ${i}; fi; \
+  done
+
+RUN chown cdsw /
+
+RUN for i in /bin /etc /opt /sbin /usr; do \
+  if [ -d ${i} ]; then \
+    chown cdsw ${i}; \
+    find ${i} -type d -exec chown cdsw {} +; \
+  fi; \
+  done
+
+WORKDIR /
+ENV DEBIAN_FRONTEND=noninteractive \
+    LC_ALL=en_US.UTF-8 LANG=C.UTF-8 LANGUAGE=en_US.UTF-8 \
+    TERM=xterm
+
+
+RUN apt-get update && apt-get dist-upgrade -y && \
+  apt-get update && apt-get install -y --no-install-recommends \
+  locales \
+  apt-transport-https \
+  krb5-user \
+  xz-utils \
+  git \
+  git-lfs \
+  ssh \
+  unzip \
+  gzip \
+  curl \
+  nano \
+  emacs-nox \
+  wget \
+  ca-certificates \
+  zlib1g-dev \
+  libbz2-dev \
+  liblzma-dev \
+  libssl-dev \
+  libsasl2-dev \
+  libzmq3-dev \
+  cpio \
+  cmake \
+  make \
+  && \
+  apt-get clean && \
+  apt-get autoremove && \
+  rm -rf /var/lib/apt/lists/* && \
+  echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
+
+RUN rm -f /etc/krb5.conf
+
+RUN mkdir -p /etc/pki/tls/certs
+RUN ln -s /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
+
+RUN ln -s /usr/lib/x86_64-linux-gnu/libsasl2.so.2 /usr/lib/x86_64-linux-gnu/libsasl2.so.3
+
+ENV PATH /home/cdsw/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/conda/bin
+
+ENV SHELL /bin/bash
+
+ENV HADOOP_ROOT_LOGGER WARN,console
+
+
+
+RUN \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        libsqlite3-0 \
+        mime-support \
+        libpq-dev \
+        gcc \
+        g++ \
+    && \
+    rm -rf /var/lib/apt/lists/*
+
+
+RUN apt-get update && apt-get install -y --no-install-recommends python3.8 python3.8-dev python3-pip python-is-python3
+
+COPY etc/pip.conf /etc/pip.conf
+RUN pip3 config set install.user false
+
+
+ENV ML_RUNTIME_KERNEL="Python 3.10" \
+    ML_RUNTIME_EDITION=Standard \
+    ML_RUNTIME_DESCRIPTION="Standard edition R runtime provided by Cloudera" \
+    R_VERSION=4.1.1
+
+COPY build-utils/r/r-runtime-dependencies.txt /build/
+
+ADD build/r-4.1.1-community-pkg.tar.gz /usr/local
 
 RUN \
     apt-get update && \
@@ -22,30 +104,45 @@ RUN \
       sed '/^$/d; /^#/d; s/#.*$//' | \
       xargs apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/* && \
-    rm -rf /build 
+    rm -rf /build && \
+    chown -R cdsw:cdsw /usr/local/lib/R/etc && \
+    ln -sf /usr/lib/x86_64-linux-gnu/libopenblas.so.0 /usr/local/lib/R/lib/libRblas.so
 
+COPY etc/Rprofile.site /usr/local/lib/R/etc/Rprofile.site
+COPY etc/Rserv.conf /etc/Rserv.conf
 
-ENV PYTHON3_VERSION=3.10 \
-   ML_RUNTIME_KERNEL="R 4.0" \
-   ML_RUNTIME_EDITION=Standard \
-   ML_RUNTIME_DESCRIPTION="Runtime with a custom PBJ with R installed (python by default) for GPU"
+RUN chown cdsw:cdsw /usr/local/lib/R/etc/Rprofile.site
+
 
 ENV ML_RUNTIME_EDITOR="PBJ Workbench" \
-   ML_RUNTIME_EDITION="Tech Preview" \
-   ML_RUNTIME_KERNEL="R 4.0" \
-   ML_RUNTIME_JUPYTER_KERNEL_NAME="r4.0" \
-   ML_RUNTIME_JUPYTER_KERNEL_GATEWAY_CMD="jupyter kernelgateway --config=/home/cdsw/.jupyter/jupyter_kernel_gateway_config.py --debug" \
-   ML_RUNTIME_DESCRIPTION="Custom PBJ Workbench R runtime provided by Ryan" \
-   JUPYTERLAB_WORKSPACES_DIR=/tmp
+    ML_RUNTIME_EDITION="Tech Preview" \
+    ML_RUNTIME_JUPYTER_KERNEL_GATEWAY_CMD="jupyter kernelgateway --config=/home/cdsw/.jupyter/jupyter_kernel_gateway_config.py" \
+    JUPYTERLAB_WORKSPACES_DIR=/tmp
+
+COPY requirements/pbj-workbench-base/requirements-3.8.txt /build/requirements.txt
+
+COPY etc/cloudera.mplstyle /etc/cloudera.mplstyle
 
 RUN \
-    /bin/bash -c "echo -e \"install.packages('IRkernel', lib = '/usr/lib/R/library')\nIRkernel::installspec(prefix='/usr/local',name = '${ML_RUNTIME_JUPYTER_KERNEL_NAME}', displayname = '${ML_RUNTIME_KERNEL}')\" | R --no-save" && \
+    SETUPTOOLS_USE_DISTUTILS=stdlib pip3 install \
+        --no-cache-dir \
+        --no-warn-script-location \
+        -r /build/requirements.txt && \
     rm -rf /build
+
+ENV ML_RUNTIME_JUPYTER_KERNEL_NAME="python3" \
+    ML_RUNTIME_DESCRIPTION="PBJ Workbench R runtime provided by Cloudera"
+
+#RUN \
+#    /bin/bash -c "echo -e \"install.packages('IRkernel')\nIRkernel::installspec(prefix='/usr/local',name = '${ML_RUNTIME_JUPYTER_KERNEL_NAME}', displayname = '${ML_RUNTIME_KERNEL}')\" | R --no-save" && \
+#    rm -rf /build
+
+
 
 ENV \
    ML_RUNTIME_METADATA_VERSION=2 \
-   ML_RUNTIME_FULL_VERSION=1.2.1 \
-   ML_RUNTIME_SHORT_VERSION=1.2 \
+   ML_RUNTIME_FULL_VERSION=1.4.1 \
+   ML_RUNTIME_SHORT_VERSION=1.4 \
    ML_RUNTIME_MAINTENANCE_VERSION=1 \
    ML_RUNTIME_GIT_HASH=0 \
    ML_RUNTIME_GBN=0
@@ -62,3 +159,4 @@ LABEL \
    com.cloudera.ml.runtime.git-hash=$ML_RUNTIME_GIT_HASH \
    com.cloudera.ml.runtime.gbn=$ML_RUNTIME_GBN \
    com.cloudera.ml.runtime.cuda-version=$ML_RUNTIME_CUDA_VERSION
+   #com.cloudera.ml.runtime.cuda-version=$ML_RUNTIME_CUDA_VERSION
