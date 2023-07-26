@@ -89,7 +89,7 @@ COPY etc/pip.conf /etc/pip.conf
 RUN pip3 config set install.user false
 
 
-ENV ML_RUNTIME_KERNEL="Python 3.10" \
+ENV ML_RUNTIME_KERNEL="R 4.1" \
     ML_RUNTIME_EDITION=Standard \
     ML_RUNTIME_DESCRIPTION="Standard edition R runtime provided by Cloudera" \
     R_VERSION=4.1.1
@@ -130,12 +130,12 @@ RUN \
         -r /build/requirements.txt && \
     rm -rf /build
 
-ENV ML_RUNTIME_JUPYTER_KERNEL_NAME="python3" \
+ENV ML_RUNTIME_JUPYTER_KERNEL_NAME="r4.1" \
     ML_RUNTIME_DESCRIPTION="PBJ Workbench R runtime provided by Cloudera"
 
-#RUN \
-#    /bin/bash -c "echo -e \"install.packages('IRkernel')\nIRkernel::installspec(prefix='/usr/local',name = '${ML_RUNTIME_JUPYTER_KERNEL_NAME}', displayname = '${ML_RUNTIME_KERNEL}')\" | R --no-save" && \
-#    rm -rf /build
+RUN \
+    /bin/bash -c "echo -e \"install.packages('IRkernel')\nIRkernel::installspec(prefix='/usr/local',name = '${ML_RUNTIME_JUPYTER_KERNEL_NAME}', displayname = '${ML_RUNTIME_KERNEL}')\" | R --no-save" && \
+    rm -rf /build
 
 
 
