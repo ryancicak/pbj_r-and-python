@@ -1,5 +1,6 @@
 # Copyright 2022 Cloudera. All Rights Reserved.
-FROM ubuntu:20.04
+FROM nvidia/cuda:11.7.1-cudnn8-devel-ubuntu20.04
+RUN apt-key del 7fa2af80 && apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/3bf863cc.pub
 
 RUN \
   addgroup --gid 8536 cdsw && \
@@ -90,9 +91,8 @@ RUN pip3 config set install.user false
 
 
 ENV ML_RUNTIME_KERNEL="R 4.1" \
-    ML_RUNTIME_EDITION=Standard \
-    ML_RUNTIME_DESCRIPTION="Standard edition R runtime provided by Cloudera" \
-    R_VERSION=4.1.1
+    R_VERSION=4.1.1 \
+    ML_RUNTIME_CUDA_VERSION="11.7.1"
 
 COPY build-utils/r/r-runtime-dependencies.txt /build/
 
@@ -115,7 +115,7 @@ RUN chown cdsw:cdsw /usr/local/lib/R/etc/Rprofile.site
 
 
 ENV ML_RUNTIME_EDITOR="PBJ Workbench" \
-    ML_RUNTIME_EDITION="Tech Preview" \
+    ML_RUNTIME_EDITION="Nvidia GPU-Tech Preview" \
     ML_RUNTIME_JUPYTER_KERNEL_GATEWAY_CMD="jupyter kernelgateway --config=/home/cdsw/.jupyter/jupyter_kernel_gateway_config.py" \
     JUPYTERLAB_WORKSPACES_DIR=/tmp
 
@@ -131,7 +131,7 @@ RUN \
     rm -rf /build
 
 ENV ML_RUNTIME_JUPYTER_KERNEL_NAME="r4.1" \
-    ML_RUNTIME_DESCRIPTION="PBJ Workbench R runtime provided by Cloudera"
+    ML_RUNTIME_DESCRIPTION="PBJ Workbench R GPU runtime provided by Ryan"
 
 RUN \
     /bin/bash -c "echo -e \"install.packages('IRkernel')\nIRkernel::installspec(prefix='/usr/local',name = '${ML_RUNTIME_JUPYTER_KERNEL_NAME}', displayname = '${ML_RUNTIME_KERNEL}')\" | R --no-save" && \
@@ -141,8 +141,8 @@ RUN \
 
 ENV \
    ML_RUNTIME_METADATA_VERSION=2 \
-   ML_RUNTIME_FULL_VERSION=1.4.1 \
-   ML_RUNTIME_SHORT_VERSION=1.4 \
+   ML_RUNTIME_FULL_VERSION=1.5.1 \
+   ML_RUNTIME_SHORT_VERSION=1.5 \
    ML_RUNTIME_MAINTENANCE_VERSION=1 \
    ML_RUNTIME_GIT_HASH=0 \
    ML_RUNTIME_GBN=0
@@ -159,4 +159,3 @@ LABEL \
    com.cloudera.ml.runtime.git-hash=$ML_RUNTIME_GIT_HASH \
    com.cloudera.ml.runtime.gbn=$ML_RUNTIME_GBN \
    com.cloudera.ml.runtime.cuda-version=$ML_RUNTIME_CUDA_VERSION
-   #com.cloudera.ml.runtime.cuda-version=$ML_RUNTIME_CUDA_VERSION
